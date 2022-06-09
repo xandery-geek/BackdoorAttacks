@@ -1,6 +1,7 @@
 import os
 import argparse
-from utils.utils import import_class, str2bool
+from process.classifier import Classifier
+from utils.utils import str2bool
 
 
 def parse_arguments():
@@ -13,7 +14,7 @@ def parse_arguments():
     parser.add_argument('--dataset', type=str, default='mnist', choices=['mnist', 'cifar-10'])
     parser.add_argument('--bs', type=int, default=128, help='batch size')
 
-    parser.add_argument('--model', type=str, default='ResNet18')
+    parser.add_argument('--model', type=str, default='ResNet18', choices=['ResNet18', 'ResNet34', 'ResNet50', 'ResNet101'])
     parser.add_argument('--save', type=str, default='checkpoint', help='save path')
     parser.add_argument('--ckpt', type=str, default='', help='load state dict of model from ckpt')
     parser.add_argument('--train', type=str2bool, default='True')
@@ -39,8 +40,7 @@ if __name__ == "__main__":
     opt = parse_arguments()
     os.environ['CUDA_VISIBLE_DEVICES'] = str(opt.device)
 
-    attack_method = '.'.join(['methods', opt.method.lower(), opt.method])
-    Processer = import_class(attack_method)(opt)
+    Processer = Classifier(opt)
     
     if opt.train:
         Processer.train()
