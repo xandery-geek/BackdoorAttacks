@@ -26,7 +26,7 @@ class BaseProcess(object):
             for it in iterations:
                 opt.lr_decay_epochs.append(int(it))
 
-        self.model_name = '{}_{}'.format(opt.dataset, opt.trial)
+        self.model_name = '{}_{}_{}'.format(opt.dataset, opt.model, opt.trial)
         self.model_path = os.path.join(opt.save, '{}_models'.format(opt.method), self.model_name)
         check_path(self.model_path)
 
