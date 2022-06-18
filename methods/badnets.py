@@ -2,7 +2,7 @@ import numpy as np
 from methods.base import BaseAttack
 from data.trigger import PatchTrigger
 from data.utils import get_image_size
-from data.poisoneddataset import PoisonedDataset
+from data.dataset import PoisonedDataset
 from data.utils import load_data
 
 

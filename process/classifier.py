@@ -1,9 +1,6 @@
 import torch
-import numpy as np
 from torchvision import transforms
 from process.base import BaseProcess
-from data.trigger import PatchTrigger
-from data.utils import get_image_size
 from utils.utils import AverageMeter, accuracy, import_class
 from utils.utils import save_images
 
@@ -18,19 +15,6 @@ class Classifier(BaseProcess):
         # load mode
         self.model = self._load_model()
         self.model = self.model.cuda()
-
-        # set trigger
-        image_size = get_image_size(self.opt.dataset)
-        mask = np.zeros((image_size, image_size), dtype=np.uint8)
-        patch = np.zeros((image_size, image_size), dtype=np.uint8)
-        
-        mask[image_size-4: image_size-1, image_size-4: image_size-1] = 1
-        patch[image_size-4: image_size-1, image_size-4: image_size-1] = 255
-
-        if self.opt.dataset == 'mnist':
-            self.trigger = PatchTrigger(mask, patch, mode='CHW')
-        else:
-            self.trigger = PatchTrigger(mask, patch, mode='HWC')
 
         self.train_loader, self.ori_test_loader, self.poi_test_loader = self._load_data()
         

@@ -4,10 +4,35 @@ import numpy as np
 from torch.utils.data import Dataset
 
 
+class NormalDataset(Dataset):
+    def __init__(self, dataset, transform=None) -> None:
+        """
+        datasetdata: original dataset
+        """
+        super().__init__()
+        self.transform = transform
+
+        self.classes = dataset.classes
+        self.data = copy.deepcopy(dataset.data)
+        self.targets = copy.deepcopy(dataset.targets)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        img = self.data[index]
+        label = self.targets[index]
+        
+        if self.transform is not None:
+            img = self.transform(img)
+
+        return img, label
+
+
 class PoisonedDataset(Dataset):
     def __init__(self, dataset, trigger, poisoned_target, p, mode='replace', transform=None) -> None:
         """
-        data: original data
+        dataset: original dataset
         trigger: trigger for backdoor
         poisoned_target: target label for poisoned sample
         p: poisoned percentage
