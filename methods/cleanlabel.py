@@ -13,7 +13,7 @@ from data.dataset import PoisonedDataset, MergeDataset
 from networks.backbone import ResNetFeature
 from data.dataset import pil_loader
 from data.utils import get_image_size
-from data.utils import load_data, dataset_dict
+from data.utils import load_data
 
 
 class PerturbationDataset(Dataset):
@@ -139,13 +139,21 @@ class CleanLabel(BaseAttack):
 
     def get_poisoned_data(self, poisoned_target, train, p=0.1, transform=None):
         if train:
+            print('==> Loading benign dataset!')
             benign_dataset = load_data(self.opt.data_path, self.opt.dataset, train=True)
 
             if self.opt.regenerate or not os.path.exists(self.dataset_path):
                 self.generate_poisoned_dataset(benign_dataset, poisoned_target)
 
-            target_transform = lambda _: poisoned_target
-            poisoned_dataset = load_data(self.dataset_path, target_transform=target_transform)
+            print('==> Loading poisoned dataset!')
+            poisoned_dataset = load_data(self.dataset_path)
+
+            imgs = []
+            for img in poisoned_dataset.imgs:
+                imgs.append((img[0], poisoned_target))
+
+            poisoned_dataset.imgs = imgs
+            poisoned_dataset.targets = [poisoned_target] * len(poisoned_dataset.targets) 
             
             # merge benign dataset and poisoned dataset
             poisoned_data = MergeDataset(benign_dataset, poisoned_dataset, transform)
