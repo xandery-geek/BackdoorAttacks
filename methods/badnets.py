@@ -18,11 +18,8 @@ class BadNets(BaseAttack):
         mask[image_size-4: image_size-1, image_size-4: image_size-1] = 1
         patch[image_size-4: image_size-1, image_size-4: image_size-1] = 255
 
-        if self.opt.dataset == 'mnist':
-            self.trigger = PatchTrigger(mask, patch, mode='CHW')
-        else:
-            self.trigger = PatchTrigger(mask, patch, mode='HWC')
-    
+        self.trigger = PatchTrigger(mask, patch, mode='HWC')
+
     def get_poisoned_data(self, poisoned_target, train, p=0.1, mode='replace', transform=None):        
         dataset = load_data(self.opt.data_path, self.opt.dataset, train=train)
         poisoned_data = PoisonedDataset(dataset, self.trigger, poisoned_target, p, mode=mode, transform=transform)

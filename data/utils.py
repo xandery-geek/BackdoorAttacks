@@ -1,13 +1,24 @@
+import os
 from torchvision import datasets
 
+dataset_dict = {
+    'mnist': 'MNIST',
+    'cifar-10': 'CIFAR-10'
+}
 
-def load_data(data_path, dataset, train=True):
-    if dataset == 'mnist':
-        return datasets.MNIST(root=data_path, train=train, download=True)
-    elif dataset == 'cifar-10':
-        return datasets.CIFAR10(root=data_path, train=train, download=True)
+
+def load_data(data_path, dataset=None, train=True, target_transform=None):
+
+    if dataset is None:
+        dataset_path = data_path
     else:
-        raise NotImplementedError('dataset {} is not supported!'.format(dataset))
+        try:
+            dataset_path = os.path.join(data_path, dataset_dict[dataset], 'train' if train else 'test')
+        except KeyError:
+            raise NotImplementedError('dataset {} is not supported!'.format(dataset))
+
+    dataset = datasets.ImageFolder(root=dataset_path, target_transform=target_transform)
+    return dataset
 
 
 def get_num_classes(dataset):

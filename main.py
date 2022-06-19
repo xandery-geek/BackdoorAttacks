@@ -12,6 +12,7 @@ def parse_arguments():
 
     parser.add_argument('--data_path', type=str, default='../data')
     parser.add_argument('--dataset', type=str, default='cifar-10', choices=['mnist', 'cifar-10'])
+    parser.add_argument('--regenerate', type=str2bool, default=False)
     parser.add_argument('--bs', type=int, default=128, help='batch size')
 
     parser.add_argument('--model', type=str, default='ResNet18', choices=['ResNet18', 'ResNet34', 'ResNet50', 'ResNet101'])
@@ -32,6 +33,9 @@ def parse_arguments():
     parser.add_argument('--percentage', type=float, default=0.1, help='poisoned percentage')
 
     parser.add_argument('--trial', type=str, default='0', help='id for recording multiple runs')
+    
+    # For CleanLabel
+    parser.add_argument('--pre_ckpt', type=str, default='', help='pretrained state dict for CleanLabel')
 
     return parser.parse_args()
 
