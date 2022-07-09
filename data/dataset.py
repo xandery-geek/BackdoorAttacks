@@ -38,7 +38,7 @@ class NormalDataset(Dataset):
 
 
 class PoisonedDataset(Dataset):
-    def __init__(self, dataset, trigger, poisoned_target, p, transform=None) -> None:
+    def __init__(self, dataset, trigger, poisoned_target, p, transform=None, pre_transform=None) -> None:
         """
         dataset: `VisionDataset` instance
         trigger: trigger for backdoor
@@ -51,6 +51,7 @@ class PoisonedDataset(Dataset):
         self.targets = copy.deepcopy(dataset.targets)
 
         self.transform = transform
+        self.pre_transform = pre_transform
         self.loader = pil_loader
 
         self.p = p
@@ -67,7 +68,9 @@ class PoisonedDataset(Dataset):
     def __getitem__(self, index):
         path, target = self.imgs[index]
         img = self.loader(path)
-        img = np.array(img)  # convert PIL Image to ndarray
+
+        if self.pre_transform is not None:
+            img = self.pre_transform(img)
 
         # add trigger
         if index in self.poisoned_index:

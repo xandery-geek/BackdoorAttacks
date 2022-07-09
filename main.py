@@ -11,7 +11,7 @@ def parse_arguments():
     parser.add_argument('--method', type=str, default='BadNets', choices=['BadNets', 'CleanLabel'], help='Backdoor attack methods')
 
     parser.add_argument('--data_path', type=str, default='../data')
-    parser.add_argument('--dataset', type=str, default='cifar-10', choices=['mnist', 'cifar-10'])
+    parser.add_argument('--dataset', type=str, default='cifar-10', choices=['mnist', 'cifar-10', 'imagenet'])
     parser.add_argument('--regenerate', type=str2bool, default=False)
     parser.add_argument('--bs', type=int, default=128, help='batch size')
 

@@ -4,6 +4,7 @@ from data.trigger import PatchTrigger
 from data.utils import get_image_size
 from data.dataset import PoisonedDataset
 from data.utils import load_data
+from torchvision import transforms
 
 
 class BadNets(BaseAttack):
@@ -20,8 +21,19 @@ class BadNets(BaseAttack):
 
         self.trigger = PatchTrigger(mask, patch, mode='HWC')
 
-    def get_poisoned_data(self, poisoned_target, train, p=0.1, mode='replace', transform=None):        
+    def get_poisoned_data(self, poisoned_target, train, p=0.1, transform=None):
+        if self.opt.dataset == 'mnist':
+            pre_transform = None
+        elif self.opt.dataset == 'cifar-10':
+            pre_transform = None
+        else:
+            pre_transform = transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+            ])
+
         dataset = load_data(self.opt.data_path, self.opt.dataset, train=train)
-        poisoned_data = PoisonedDataset(dataset, self.trigger, poisoned_target, p, mode=mode, transform=transform)
+        poisoned_data = PoisonedDataset(dataset, self.trigger, poisoned_target, p, transform=transform, 
+                                        pre_transform=pre_transform)
         return poisoned_data
     

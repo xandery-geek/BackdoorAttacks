@@ -37,8 +37,15 @@ class Classifier(BaseProcess):
                 transforms.Lambda(lambda x: x.repeat(3,1,1)),
                 transforms.Normalize(mean=mean, std=std),
             ])
+        elif self.opt.dataset == 'cifar-10':
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize(mean=mean, std=std),
+            ])
         else:
             transform = transforms.Compose([
+                # transforms.Resize(256),
+                # transforms.CenterCrop(224),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=mean, std=std),
             ])

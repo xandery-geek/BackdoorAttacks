@@ -1,6 +1,6 @@
 import numpy as np
 from abc import abstractclassmethod
-
+from PIL import Image
 
 class BaseTrigger(object):
     def __init__(self, name, mode='CHW') -> None:
@@ -8,7 +8,7 @@ class BaseTrigger(object):
         self.mode = mode
     
     @abstractclassmethod
-    def __call__(self, data):
+    def __call__(self, img):
         pass
     
     def __repr__(self) -> str:
@@ -24,8 +24,10 @@ class PixelTrigger(BaseTrigger):
         self.position = position
         self.value = value
 
-    def __call__(self, data):
-        data[:, self.position[0], self.position[1]] = self.value
+    def __call__(self, img):
+        img_arr = np.array(img)
+        img_arr[:, self.position[0], self.position[1]] = self.value
+        return Image.fromarray(img_arr)
 
 
 class PatchTrigger(BaseTrigger):
@@ -35,9 +37,11 @@ class PatchTrigger(BaseTrigger):
         self.mask = mask
         self.patch = patch
 
-    def __call__(self, data):
+    def __call__(self, img):
+
+        img_arr = np.array(img)
         if self.mode == 'HWC':
-            channel = data.shape[-1]
+            channel = img_arr.shape[-1]
             if len(self.patch.shape) < 3:
                 self.mask = np.expand_dims(self.mask, 2)
                 self.patch = np.expand_dims(self.patch, 2)
@@ -45,4 +49,5 @@ class PatchTrigger(BaseTrigger):
                 self.mask = np.repeat(self.mask, channel, axis=2)
                 self.patch = np.repeat(self.patch, channel, axis=2)
 
-        return data * (1 - self.mask) + self.patch * self.mask
+        img_arr = img_arr * (1 - self.mask) + self.patch * self.mask
+        return Image.fromarray(img_arr)

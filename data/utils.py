@@ -3,7 +3,8 @@ from torchvision import datasets
 
 dataset_dict = {
     'mnist': 'MNIST',
-    'cifar-10': 'CIFAR-10'
+    'cifar-10': 'CIFAR-10',
+    'imagenet': 'ImageNet'
 }
 
 
@@ -22,10 +23,10 @@ def load_data(data_path, dataset=None, train=True, target_transform=None):
 
 
 def get_num_classes(dataset):
-    classes_dict = {'mnist': 10, 'cifar-10': 10}
+    classes_dict = {'mnist': 10, 'cifar-10': 10, 'imagenet': 100}
     return classes_dict[dataset]
 
 
 def get_image_size(dataset):
-    size_dict = {'mnist': 28, 'cifar-10': 32}
+    size_dict = {'mnist': 28, 'cifar-10': 32, 'imagenet': 224}
     return size_dict[dataset]

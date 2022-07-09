@@ -45,8 +45,8 @@ class CleanLabel(BaseAttack):
         mask = np.zeros((image_size, image_size), dtype=np.uint8)
         patch = np.zeros((image_size, image_size), dtype=np.uint8)
         
-        mask[image_size-4: image_size-1, image_size-4: image_size-1] = 1
-        patch[image_size-4: image_size-1, image_size-4: image_size-1] = 255
+        mask[image_size-8: image_size-1, image_size-8: image_size-1] = 1
+        patch[image_size-8: image_size-1, image_size-8: image_size-1] = 0
 
         if self.opt.dataset == 'mnist':
             self.trigger = PatchTrigger(mask, patch, mode='CHW')
@@ -54,17 +54,17 @@ class CleanLabel(BaseAttack):
             self.trigger = PatchTrigger(mask, patch, mode='HWC')
         
         # set model
-        self.model = ResNetFeature(self.opt.model, pretrained=False)
-
         if self.opt.pre_ckpt != '' and os.path.exists(self.opt.pre_ckpt):
+            self.model = ResNetFeature(self.opt.model, pretrained=False)
             print('==> Initial ResNetFeature with {}'.format(self.opt.pre_ckpt))
             state_dict = torch.load(self.opt.pre_ckpt)
             self.model.copy_from_resnet(state_dict['model'])
         else:
-            print("Please specify (correct) `pre_ckpt`, not {}!".format(self.opt.pre_ckpt))
+            print("Please specify (correct) `pre_ckpt`, not {}! Initialzie with pre-train parameters!".format(self.opt.pre_ckpt))
+            self.model = ResNetFeature(self.opt.model, pretrained=True)
         
         self.model = self.model.cuda()
-        self.model.eval()
+        # self.model.eval()
 
         model_name = '{}_{}_{}'.format(self.opt.dataset, self.opt.model, self.opt.trial)
         self.dataset_path = os.path.join(self.opt.save, '{}_datasets'.format(self.opt.method), model_name)
@@ -115,11 +115,17 @@ class CleanLabel(BaseAttack):
         if self.opt.dataset == 'mnist':
             transform = transforms.Compose([
                 transforms.Lambda(lambda x: x.div(255)),
-                transforms.Lambda(lambda x: x.repeat(3,1,1))
+                transforms.Lambda(lambda x: x.repeat(3,1,1)),
+            ])
+        elif self.opt.dataset == 'cifar-10':
+            transform = transforms.Compose([
+                transforms.ToTensor(),
             ])
         else:
             transform = transforms.Compose([
-                transforms.ToTensor()
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
             ])
 
         new_dataset = PerturbationDataset(new_imgs, poisoned_target, transform=transform)
@@ -128,6 +134,7 @@ class CleanLabel(BaseAttack):
         for img, _, idx in data_loader:
             # perturb semantic
             adv_img = self.adversarial_perturbation(img)
+            # adv_img = img
             
             # convert tentor to ndarray
             adv_img = (adv_img * 255).cpu().numpy().astype(np.uint8)

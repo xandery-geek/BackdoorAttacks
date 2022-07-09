@@ -25,12 +25,14 @@ class ResNetFeature(nn.Module):
         self.bn1 = model_resnet.bn1
         self.relu = model_resnet.relu
         self.maxpool = model_resnet.maxpool
+
+        self.layer0 = nn.Sequential(self.conv1, self.bn1, self.relu, self.maxpool)
         self.layer1 = model_resnet.layer1
         self.layer2 = model_resnet.layer2
         self.layer3 = model_resnet.layer3
         self.layer4 = model_resnet.layer4
-        self.feature_layers = nn.Sequential(self.conv1, self.bn1, self.relu, self.maxpool, self.layer1, self.layer2,
-                                            self.layer3, self.layer4)
+        # self.feature_layers = nn.Sequential(self.conv1, self.bn1, self.relu, self.maxpool, self.layer1, self.layer2,
+        #                                     self.layer3, self.layer4)
         
         self.mean = torch.tensor([[[0.485]], [[0.456]], [[0.406]]]).cuda()
         self.std = torch.tensor([[[0.229]], [[0.224]], [[0.225]]]).cuda()
@@ -46,7 +48,11 @@ class ResNetFeature(nn.Module):
 
     def forward(self, x):
         x = (x - self.mean) / self.std
-        f = self.feature_layers(x)
+
+        f = self.layer0(x)
+        f = self.layer1(f)
+        # f = self.layer2(f)
+        # f = self.feature_layers(x)
         f = f.view(f.size(0), -1)
 
         return f
