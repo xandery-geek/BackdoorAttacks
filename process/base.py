@@ -69,7 +69,9 @@ class BaseProcess(object):
             param_group['lr'] = lr
 
     def _save_model(self, obj, filename):
-        torch.save(obj, os.path.join(self.model_path, filename))
+        ckpt_path = os.path.join(self.model_path, filename)
+        print("Saving checkpint to {}".format(ckpt_path))
+        torch.save(obj, ckpt_path)
 
     @abstractclassmethod
     def train(self):

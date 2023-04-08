@@ -37,50 +37,30 @@ class NormalDataset(Dataset):
         return img, target
 
 
-class PoisonedDataset(Dataset):
-    def __init__(self, dataset, trigger, poisoned_target, p, transform=None, pre_transform=None) -> None:
+class PoisonedDataset(NormalDataset):
+    def __init__(self, dataset, poi_param, p, transform=None) -> None:
         """
         dataset: `VisionDataset` instance
-        trigger: trigger for backdoor
-        poisoned_target: target label for poisoned sample
+        poi_param: poisoned parameters
         p: poisoned percentage
         mode: poisoned mode, option from ['replace', 'merge']
         """
-        super().__init__()
-        self.imgs = copy.deepcopy(dataset.imgs)
-        self.targets = copy.deepcopy(dataset.targets)
-
-        self.transform = transform
-        self.pre_transform = pre_transform
-        self.loader = pil_loader
+        super().__init__(dataset, transform)
 
         self.p = p
-        self.trigger = trigger
-        self.poisoned_target = poisoned_target
+        self.poisoned_target = poi_param['target']
 
         num_data = len(self.imgs)
-        self.poisoned_index = np.random.permutation(num_data)[0: int(num_data * self.p)]
-        
+        self.poisoned_index = self.get_random_indices(range(num_data), int(num_data * self.p))
 
+    @staticmethod
+    def get_random_indices(a, num, seed=1):
+        rng = np.random.RandomState(seed=seed)
+        indices = rng.choice(a, num, replace=False)
+        return indices
+    
     def __len__(self):
         return len(self.imgs)
-
-    def __getitem__(self, index):
-        path, target = self.imgs[index]
-        img = self.loader(path)
-
-        if self.pre_transform is not None:
-            img = self.pre_transform(img)
-
-        # add trigger
-        if index in self.poisoned_index:
-            img= self.trigger(img)
-            target = self.poisoned_target
-
-        if self.transform is not None:
-            img = self.transform(img)
-
-        return img, target
 
 
 class MergeDataset(Dataset):

@@ -1,5 +1,5 @@
 # Backdoor Attacks
-> A Pytroch Implementation of Some Backdoor Attack Algorithms, Including BadNets ...
+> A Pytroch Implementation of Some Backdoor Attack Algorithms, Including BadNets, SIG, FIBA, FTrojan ...
 
 ## Usage
 
@@ -50,11 +50,23 @@ Poisoned Acc@1: 95.78000
 ```
 
 ## Paper And Code
-BadNets (2017)
+**BadNets (2017)**
 - `paper`: [Badnets: Identifying vulnerabilities in the machine learning model supply chain](https://arxiv.org/abs/1708.06733)
 - `code`: [BadNets](https://github.com/Kooscii/BadNets)
 
-ISSBA (ICCV 2021)
+**SIG (2019, ICIP)**
+- `paper`: [A New Backdoor Attack in CNNS by Training Set Corruption Without Label Poisoning](https://arxiv.org/abs/1902.11237)
+
+
+**FIBA (2022, CVPR)**
+- `paper`: [FIBA: Frequency-Injection Based Backdoor Attack in Medical Image Analysis](https://arxiv.org/abs/2112.01148)
+- `code`: [FIBA](https://github.com/HazardFY/FIBA)
+
+**FTrojan (2022, ECCV)**
+- `paper`: [An Invisible Black-Box Backdoor Attack Through Frequency Domain](https://link.springer.com/chapter/10.1007/978-3-031-19778-9_23)
+- `code`: [FTrojan](https://github.com/SoftWiser-group/FTrojan)
+
+**ISSBA (ICCV 2021)**
 - `paper`: [Invisible Backdoor Attack with Sample-Specific Triggers
 ](http://openaccess.thecvf.com/content/ICCV2021/html/Li_Invisible_Backdoor_Attack_With_Sample-Specific_Triggers_ICCV_2021_paper.html)
 - `code`: [ISSBA](https://github.com/yuezunli/ISSBA)

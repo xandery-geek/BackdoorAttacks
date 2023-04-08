@@ -1,5 +1,6 @@
 import os
 from torchvision import datasets
+from torchvision import transforms
 
 dataset_dict = {
     'mnist': 'MNIST',
@@ -30,3 +31,33 @@ def get_num_classes(dataset):
 def get_image_size(dataset):
     size_dict = {'mnist': 28, 'cifar-10': 32, 'imagenet': 224}
     return size_dict[dataset]
+
+
+def get_padding_size(dataset):
+    size_dict = {'mnist': 4, 'cifar-10': 4, 'imagenet': 16}
+    return size_dict[dataset]
+
+
+def get_transform(dataset, train=True):
+        mean = (0.49139968, 0.48215827, 0.44653124)
+        std = (0.24703233, 0.24348505, 0.26158768)
+
+        image_size = get_image_size(dataset)
+        padding_size = get_padding_size(dataset)
+        if train:
+            transform = [
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomCrop(image_size, padding=padding_size),
+            ]
+        else:
+            transform = [
+                transforms.CenterCrop(image_size),
+            ]
+
+        transform.extend([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=mean, std=std),
+        ])
+
+        transform = transforms.Compose(transform)
+        return transform

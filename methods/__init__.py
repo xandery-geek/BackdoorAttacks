@@ -1,2 +1,5 @@
 from . import badnets
-from . import cleanlabel
+from . import clean
+from . import sig
+from . import fiba
+from . import ftrojan

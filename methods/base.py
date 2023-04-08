@@ -2,7 +2,8 @@ from abc import abstractclassmethod
 
 
 class BaseAttack(object):
-    def __init__(self, opt) -> None:
+    def __init__(self, name, opt) -> None:
+        self.name = name
         self.opt = opt
 
     @abstractclassmethod

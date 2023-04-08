@@ -1,30 +1,26 @@
 import numpy as np
+from PIL import Image
 from methods.base import BaseAttack
-from data.trigger import PatchTrigger
-from data.utils import get_image_size
 from data.dataset import PoisonedDataset
 from data.utils import load_data, get_transform
 from torchvision import transforms
 
 
-class BadNetsDataset(PoisonedDataset):
+def sig(img, delta, freq):
+    overlay = np.zeros(img.shape, np.float64)
+    _, m, _ = overlay.shape
+    for i in range(m):
+        overlay[:, i] = delta * np.sin(2 * np.pi * i * freq/m)
+    overlay = np.clip(overlay + img, 0, 255).astype(np.uint8)
+    return overlay
+
+
+class SIGDataset(PoisonedDataset):
     def __init__(self, dataset, poi_param, p, transform=None, pre_transform=None) -> None:
         super().__init__(dataset, poi_param, p, transform)
         
         self.pre_transform = pre_transform
         self.poi_param = poi_param
-
-        # set trigger
-        image_size = self.poi_param['image_size']
-        patch_size = self.poi_param['patch_size']
-        
-        mask = np.zeros((image_size, image_size), dtype=np.uint8)
-        patch = np.zeros((image_size, image_size), dtype=np.uint8)
-        
-        mask[image_size-patch_size: image_size, image_size-patch_size: image_size] = 1
-        patch[image_size-patch_size: image_size, image_size-patch_size: image_size] = 255
-
-        self.trigger = PatchTrigger(mask, patch, mode='HWC')
 
     def __getitem__(self, index):
         path, target = self.imgs[index]
@@ -35,7 +31,9 @@ class BadNetsDataset(PoisonedDataset):
 
         # add trigger
         if index in self.poisoned_index:
-            img= self.trigger(img)
+            img_arr = np.array(img)
+            img_arr = sig(img_arr, self.poi_param['delta'], self.poi_param['frequency'])
+            img = Image.fromarray(img_arr)
             target = self.poisoned_target
 
         if self.transform is not None:
@@ -44,24 +42,21 @@ class BadNetsDataset(PoisonedDataset):
         return img, target
 
 
-class BadNets(BaseAttack):
+class SIG(BaseAttack):
     """
-    Attack: BadNets
+    Attack: SIG
 
     Paper:
-        BadNets: Identifying Vulnerabilities in the Machine Learning Model Supply Chain
-        https://arxiv.org/abs/1708.06733
+        A New Backdoor Attack in CNNS by Training Set Corruption Without Label Poisoning
+        https://arxiv.org/abs/1902.11237
     """
     def __init__(self, opt) -> None:
-        super().__init__('BadNets', opt)
-
-        image_size = get_image_size(self.opt.dataset)
-        patch_size = int(image_size // 10 + 1)
+        super().__init__('SIG', opt)
 
         self.poi_param = {
             'target': self.opt.target,
-            'image_size' : image_size,
-            'patch_size': patch_size
+            'delta' : 20,
+            'frequency': 6
         }
 
     def get_poisoned_data(self, train, p=0.1):
@@ -70,6 +65,6 @@ class BadNets(BaseAttack):
         transform = transforms.Compose(transforms_list[-2:])
 
         dataset = load_data(self.opt.data_path, self.opt.dataset, train=train)
-        poisoned_data = BadNetsDataset(dataset, self.poi_param, p, transform=transform, 
+        poisoned_data = SIGDataset(dataset, self.poi_param, p, transform=transform, 
                                         pre_transform=pre_transform)
         return poisoned_data
