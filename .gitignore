@@ -1,4 +1,5 @@
 checkpoint/
 script/
+log/
 .vscode/
 __pycache__

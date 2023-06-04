@@ -31,11 +31,13 @@ class Classifier(BaseProcess):
         self._print_info()
 
     def _print_info(self):
-        print('-' * 30)
+        print('-' * 50)
         print("Datast: {}".format(self.opt.dataset))
         print("Model: {}".format(self.opt.model))
         print("Attack: {}".format(self.opt.method))
-        print('-' * 30)
+        print("Checkpoint path: {}".format(self.ckpt_path))
+        print("Log path: {}".format(self.log_path))
+        print('-' * 50)
 
     def _load_data(self):
         # load data
@@ -78,7 +80,7 @@ class Classifier(BaseProcess):
             writer.add_scalar('train_loss', loss, epoch)
 
             if (epoch + 1) % 10 == 0:
-                self.eval()
+                self.eval(epoch=epoch)
 
         self._save_model({
             'model': self.model.state_dict()
@@ -87,7 +89,7 @@ class Classifier(BaseProcess):
         writer.close()
 
     @torch.no_grad()
-    def _eval(self, ori=True):
+    def _eval(self, ori=True, epoch=None):
         self.model.eval()
         writer = SummaryWriter(log_dir=self.tb_path)
         top1 = AverageMeter()
@@ -101,15 +103,18 @@ class Classifier(BaseProcess):
             top1.update(acc1[0], labels.shape[0])
 
             if idx == 0:
-                save_images(writer, 'oir_images' if ori else 'poi_images', 
+                save_images(writer, 'ori_images' if ori else 'poi_images', 
                             images[:16], step=idx)
+        if epoch:
+            writer.add_scalar('ori_top1' if ori else 'poi_top1', 
+                              top1.avg, epoch)
+
         writer.close()
         return top1.avg
 
-    def eval(self):
-        ori_acc = self._eval(ori=True)
-        poi_acc = self._eval(ori=False)
+    def eval(self, epoch=None):
+        ori_acc = self._eval(ori=True, epoch=epoch)
+        poi_acc = self._eval(ori=False, epoch=epoch)
 
         print("Original Acc@1: {:.5f}".format(ori_acc))
         print("Poisoned Acc@1: {:.5f}".format(poi_acc))
-

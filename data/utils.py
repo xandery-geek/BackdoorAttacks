@@ -5,6 +5,7 @@ from torchvision import transforms
 dataset_dict = {
     'mnist': 'MNIST',
     'cifar-10': 'CIFAR-10',
+    'tiny': 'Tiny-ImageNet',
     'imagenet': 'ImageNet'
 }
 
@@ -24,17 +25,17 @@ def load_data(data_path, dataset=None, train=True, target_transform=None):
 
 
 def get_num_classes(dataset):
-    classes_dict = {'mnist': 10, 'cifar-10': 10, 'imagenet': 100}
+    classes_dict = {'mnist': 10, 'cifar-10': 10, 'imagenet': 100, 'tiny': 200}
     return classes_dict[dataset]
 
 
 def get_image_size(dataset):
-    size_dict = {'mnist': 28, 'cifar-10': 32, 'imagenet': 224}
+    size_dict = {'mnist': 28, 'cifar-10': 32, 'imagenet': 224, 'tiny': 64}
     return size_dict[dataset]
 
 
 def get_padding_size(dataset):
-    size_dict = {'mnist': 4, 'cifar-10': 4, 'imagenet': 16}
+    size_dict = {'mnist': 4, 'cifar-10': 4, 'imagenet': 16, 'tiny': 4}
     return size_dict[dataset]
 
 

@@ -1,4 +1,6 @@
 import os
+import time
+import yaml
 import math
 import torch
 import numpy as np
@@ -26,15 +28,22 @@ class BaseProcess(object):
             for it in iterations:
                 opt.lr_decay_epochs.append(int(it))
 
-        self.model_name = '{}_{}_{}'.format(opt.dataset, opt.model, opt.trial)
-        self.model_path = os.path.join(opt.save, '{}_models'.format(opt.method), self.model_name)
-        check_path(self.model_path)
+        cur_time = time.strftime('%y-%m-%d-%H-%M-%S', time.localtime())
+
+        self.model_name = '{}_{}_{}_{}'.format(opt.dataset, opt.model, cur_time, opt.trial)
+        self.ckpt_path = os.path.join(opt.ckpt_path, opt.method, self.model_name)
+        check_path(self.ckpt_path)
+
+        self.log_path = os.path.join(opt.log_path, opt.method, self.model_name)
+        check_path(self.log_path)
 
         if enable_tb:
-            self.tb_path = os.path.join(opt.save, '{}_tensorboard'.format(opt.method), self.model_name)
+            self.tb_path = os.path.join(self.log_path, 'tensorboard')
             check_path(self.tb_path)
         
         self.opt = opt
+
+        self._save_config_parameters()
 
     def _load_model(self):
         if 'ResNet' in self.opt.model:
@@ -69,9 +78,13 @@ class BaseProcess(object):
             param_group['lr'] = lr
 
     def _save_model(self, obj, filename):
-        ckpt_path = os.path.join(self.model_path, filename)
-        print("Saving checkpint to {}".format(ckpt_path))
-        torch.save(obj, ckpt_path)
+        ckpt = os.path.join(self.ckpt_path, filename)
+        print("Saving checkpint to {}".format(ckpt))
+        torch.save(obj, ckpt)
+
+    def _save_config_parameters(self):
+        with open(os.path.join(self.log_path, 'parameters.yaml'), 'w') as f:
+            yaml.dump(self.opt, f, indent=2)
 
     @abstractclassmethod
     def train(self):

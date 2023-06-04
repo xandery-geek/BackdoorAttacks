@@ -12,17 +12,18 @@ def parse_arguments():
 
     parser.add_argument('--device', type=int, default=0, help='gpu id')
     parser.add_argument('--method', type=str, default='BadNets', 
-                        choices=['Clean', 'BadNets', 'SIG', 'FIBA', 'FTrojan', 'CleanLabel'], 
+                        choices=['Clean', 'BadNets', 'SIG', 'FIBA', 'FTrojan'], 
                         help='Backdoor attack methods')
 
     parser.add_argument('--data_path', type=str, default='../data')
     parser.add_argument('--dataset', type=str, default='cifar-10', 
-                        choices=['mnist', 'cifar-10', 'imagenet'])
+                        choices=['mnist', 'cifar-10', 'imagenet', 'tiny'])
     parser.add_argument('--bs', type=int, default=128, help='batch size')
 
     parser.add_argument('--model', type=str, default='ResNet18', 
                         choices=['ResNet18', 'ResNet34', 'ResNet50', 'ResNet101'])
-    parser.add_argument('--save', type=str, default='checkpoint', help='save path')
+    parser.add_argument('--ckpt_path', type=str, default='checkpoint', help='checkpoint path')
+    parser.add_argument('--log_path', type=str, default='log', help='log path')
     parser.add_argument('--ckpt', type=str, default='', help='load state dict of model from ckpt')
     parser.add_argument('--train', type=str2bool, default='True')
 
@@ -40,10 +41,6 @@ def parse_arguments():
 
     parser.add_argument('--trial', type=str, default='0', help='id for recording multiple runs')
     
-    # For CleanLabel
-    parser.add_argument('--pre_ckpt', type=str, default='', help='pretrained state dict for CleanLabel')
-    parser.add_argument('--regenerate', type=str2bool, default=False)
-
     return parser.parse_args()
 
 
