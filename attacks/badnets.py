@@ -1,5 +1,5 @@
 import numpy as np
-from methods.base import BaseAttack
+from attacks.base import BaseAttack
 from data.trigger import PatchTrigger
 from data.utils import get_image_size
 from data.dataset import PoisonedDataset

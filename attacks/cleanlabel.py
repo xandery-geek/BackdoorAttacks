@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from data.trigger import PatchTrigger
-from methods.base import BaseAttack
+from attacks.base import BaseAttack
 from data.dataset import PoisonedDataset, MergeDataset
 from networks.backbone import ResNetFeature
 from data.dataset import pil_loader

@@ -1,6 +1,6 @@
 import numpy as np
 from PIL import Image
-from methods.base import BaseAttack
+from attacks.base import BaseAttack
 from data.dataset import PoisonedDataset
 from data.utils import load_data, get_transform
 from torchvision import transforms

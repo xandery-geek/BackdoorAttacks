@@ -1,4 +1,4 @@
-from abc import abstractclassmethod
+from abc import abstractclassmethod 
 
 
 class BaseAttack(object):

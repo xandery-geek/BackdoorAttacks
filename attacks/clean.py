@@ -1,4 +1,4 @@
-from methods.base import BaseAttack
+from attacks.base import BaseAttack
 from data.dataset import NormalDataset
 from data.utils import load_data, get_transform
 

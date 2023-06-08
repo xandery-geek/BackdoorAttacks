@@ -47,8 +47,8 @@ def get_transform(dataset, train=True):
         padding_size = get_padding_size(dataset)
         if train:
             transform = [
-                transforms.RandomHorizontalFlip(),
                 transforms.RandomCrop(image_size, padding=padding_size),
+                transforms.RandomHorizontalFlip(),
             ]
         else:
             transform = [
