@@ -150,26 +150,26 @@ def run(cfg):
 
     classifier = Classifier(cfg)
 
+    checkpoint_callback = callbacks.ModelCheckpoint(
+        monitor='top1',
+        dirpath=classifier.ckpt_path,
+        save_last=True,
+        mode='max')
+
+    tb_logger = TensorBoardLogger(classifier.log_path) if cfg.enable_tb else None
+
+    trainer = pl.Trainer(
+        devices=len(cfg.device),
+        accelerator='gpu',
+        max_epochs=cfg.epochs,
+        log_every_n_steps=30,
+        check_val_every_n_epoch=cfg.every_n_epoch,
+        callbacks=[checkpoint_callback],
+        logger=tb_logger,
+        strategy="ddp_find_unused_parameters_false"
+    )
+    
     if cfg.train:
-        checkpoint_callback = callbacks.ModelCheckpoint(
-            monitor='top1',
-            dirpath=classifier.ckpt_path,
-            save_last=True,
-            mode='max')
-
-        tb_logger = TensorBoardLogger(classifier.log_path) if cfg.enable_tb else None
-
-        trainer = pl.Trainer(
-            devices=len(cfg.device),
-            accelerator='gpu',
-            max_epochs=cfg.epochs,
-            log_every_n_steps=30,
-            check_val_every_n_epoch=cfg.every_n_epoch,
-            callbacks=[checkpoint_callback],
-            logger=tb_logger,
-            strategy="ddp_find_unused_parameters_false"
-        )
-
         trainer.fit(model=classifier, train_dataloaders=classifier.train_loader, 
                     val_dataloaders=[classifier.ori_test_loader, classifier.poi_test_loader])
 
