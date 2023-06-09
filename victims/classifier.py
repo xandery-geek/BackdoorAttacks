@@ -1,10 +1,11 @@
 import torch
+import pytorch_lightning as pl
 from victims.base import BaseProcess
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
-from utils.utils import AverageMeter, accuracy, import_class
-from utils.utils import save_images
-from utils.output import output_iter, ansi
+from pytorch_lightning import callbacks
+from pytorch_lightning.loggers import TensorBoardLogger
+from utils.utils import AverageMeter, accuracy, import_class, unnormalize
+from utils.output import ansi
 
 
 class Classifier(BaseProcess):
@@ -15,8 +16,7 @@ class Classifier(BaseProcess):
         self.model = self._load_model()
         self.model = self.model.cuda()
         
-        # load optimizer
-        self.optimizer, self.scheduler = self._load_optimizer(self.model.parameters())
+        # load criterion
         self.criterion = torch.nn.CrossEntropyLoss()
 
         # load attack method
@@ -25,14 +25,12 @@ class Classifier(BaseProcess):
 
         # load data
         self.train_loader, self.ori_test_loader, self.poi_test_loader = self._load_data()
+        
+        # init global variable
+        self.top1_meter = AverageMeter()
+        self.poi_top1_meter = AverageMeter()
 
-        # init writer
-        self.writer = SummaryWriter(log_dir=self.tb_path)
         self._print_info()
-
-    
-    def __del__(self):
-        self.writer.close()
 
     def _print_info(self):
         print('-' * 50)
@@ -46,104 +44,135 @@ class Classifier(BaseProcess):
     def _load_data(self):
         # load data
         dataset = self.attacker.get_poisoned_data(train=True, p=self.cfg.percentage)
-        train_loader = DataLoader(dataset=dataset, batch_size=self.cfg.bs, num_workers=16, shuffle=True)
+        train_loader = DataLoader(dataset=dataset, batch_size=self.cfg.bs, num_workers=8, shuffle=True, persistent_workers=True)
         
         dataset = self.attacker.get_poisoned_data(train=False, p=0)
-        ori_test_loader = DataLoader(dataset=dataset, batch_size=self.cfg.bs, num_workers=16, shuffle=False)
+        ori_test_loader = DataLoader(dataset=dataset, batch_size=self.cfg.bs, num_workers=8, shuffle=False, persistent_workers=True)
         
         dataset = self.attacker.get_poisoned_data(train=False, p=1)
-        poi_test_loader = DataLoader(dataset=dataset, batch_size=self.cfg.bs, num_workers=16, shuffle=False)
+        poi_test_loader = DataLoader(dataset=dataset, batch_size=self.cfg.bs, num_workers=8, shuffle=False, persistent_workers=True)
         
         return train_loader, ori_test_loader, poi_test_loader
-
-    def _train(self, epoch):
-        self.model.train()
-        loss_meter = AverageMeter()
-
-        for _, (images, labels) in enumerate(self.train_loader):
-            images, labels = images.cuda(), labels.cuda()
-            output = self.model(images)
-            loss = self.criterion(output, labels)
-            
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-
-            loss_meter.update(loss.item(), labels.shape[0])
-
-        return loss_meter.avg
-
-    def train(self):
-        for epoch in range(self.cfg.epochs):
-            loss = self._train(epoch)
-            if self.scheduler:
-                self.scheduler.step()
-
-            print('{blue_light}Epoch:{reset} {}\t {green}loss{reset}: {:.5f}'
-                  .format(output_iter(epoch, self.cfg.epochs), loss, **ansi))
-            self.writer.add_scalar('train_loss', loss, epoch)
-            self.writer.add_scalar('lr', self.optimizer.param_groups[0]['lr'], epoch)
-
-            if (epoch + 1) % self.cfg.eval_every_epochs == 0:
-                self.eval(epoch=epoch)
-
-        self._save_model({
-            'model': self.model.state_dict()
-        }, 'last.pth')
-
-    @torch.no_grad()
-    def _eval_on_clean(self, epoch=None):
-        self.model.eval()
-        loss_meter = AverageMeter()
-        top1 = AverageMeter()
-        
-        for idx, (images, labels) in enumerate( self.ori_test_loader):
-            images, labels = images.cuda(), labels.cuda()
-            output = self.model(images)
-
-            loss = self.criterion(output, labels)
-            acc1, _ = accuracy(output, labels, topk=(1, 5))
-
-            loss_meter.update(loss.item(), labels.shape[0])
-            top1.update(acc1[0], labels.shape[0])
-
-            if epoch == 0 and idx == self.cfg.sample_batch:
-                save_images(self.writer, 'ori_images', images[:16], step=epoch)
-
-        if epoch:
-            print('{yellow}Validation \t loss{reset}: {:.5f}'
-                  .format(loss_meter.avg, **ansi))
-            self.writer.add_scalar('ori_top1', top1.avg, epoch)
-            self.writer.add_scalar('eval_loss', loss_meter.avg, epoch)
-
-        return top1.avg
     
-    @torch.no_grad()
-    def _eval_on_poison(self, epoch=None):
-        self.model.eval()
-        top1 = AverageMeter()
+    def _sample_images(self, img_data, step):
+        mean = (0.49139968, 0.48215827, 0.44653124)
+        std = (0.24703233, 0.24348505, 0.26158768)
+
+        mean = torch.tensor(list(mean))
+        std = torch.tensor(list(std))
+
+        for data in img_data:
+            if data['step'] == step or data['step'] == -1:
+                name, img = data['name'], data['img']
+                img = unnormalize(img, mean, std)
+                self.logger.experiment.add_image(name, img, step, dataformats='NCHW')
+    
+    def training_step(self, batch, batch_idx):
+        images, labels = batch
+        output = self.model(images)
+        loss = self.criterion(output, labels)
+
+        return {"loss": loss}
+
+    def training_epoch_end(self, outputs):
+        loss = self.collect_outputs(outputs, ['loss'])[0]
+
+        batch_num = len(outputs)
+        loss = sum(loss).item() / batch_num
+
+        if self.cfg.enable_tb:
+            # lr = self.optimizers().param_groups[0]['lr']
+            # self.log("lr", lr, on_epoch=True, sync_dist=True)
+            self.log("loss", loss, sync_dist=True, on_epoch=True)
+    
+    def on_validation_epoch_start(self):
+        self.top1_meter.reset()
+        self.poi_top1_meter.reset()
+
+    def validation_step(self, batch, batch_idx, dataloader_idx):
+        images, labels = batch
+        output = self.model(images)
+        loss = self.criterion(output, labels)
+        acc1, _ = accuracy(output, labels, topk=(1, 5))
+
+        if dataloader_idx == 0:
+            self.top1_meter.update(acc1[0], labels.shape[0])
+        else:
+            self.poi_top1_meter.update(acc1[0], labels.shape[0])
+
+        if self.global_rank == 0 and batch_idx == self.cfg.sample_batch:
+            name = "ori_images" if dataloader_idx == 0 else "poi_images"
+            self._sample_images([{
+                "name": name, "img": images[:8].cpu(), "step":0
+            }], self.current_epoch)
+
+        return {"loss": loss}
+    
+    def validation_epoch_end(self, outputs):
+        # only collect losses of the first dataloader, i.e., the clean dataloader
+        loss = self.collect_outputs(outputs[0], ['loss'])[0]
+
+        batch_num = len(outputs[0])
+        loss = sum(loss).item() / batch_num
         
-        for idx, (images, labels) in enumerate(self.poi_test_loader):
-            images, labels = images.cuda(), labels.cuda()
-            output = self.model(images)
+        if self.cfg.enable_tb:
+            self.log("val_loss", loss, prog_bar=True, on_epoch=True, sync_dist=True)
+            self.log('top1', self.top1_meter.avg, on_epoch=True, sync_dist=True)
+            self.log('poi_top1', self.poi_top1_meter.avg, on_epoch=True, sync_dist=True)
+        
+        if self.global_rank == 0:
+            print('{yellow}Clean Acc@1{reset}: {:.5f}'.format(self.top1_meter.avg, **ansi))
+            print('{red}Poisoned Acc@1{reset}: {:.5f}'.format(self.poi_top1_meter.avg, **ansi))
 
-            acc1, _ = accuracy(output, labels, topk=(1, 5))
-            top1.update(acc1[0], labels.shape[0])
+    def on_test_epoch_start(self):
+        self.top1_meter.reset()
+        self.poi_top1_meter.reset()
 
-            if epoch == 0 and idx == self.cfg.sample_batch:
-                save_images(self.writer, 'poi_images', images[:16], step=epoch)
+    def test_step(self, batch, batch_idx, dataloader_idx):
+        images, labels = batch
+        output = self.model(images)
+        acc1, _ = accuracy(output, labels, topk=(1, 5))
 
-        if epoch:
-            self.writer.add_scalar('poi_top1', top1.avg, epoch)
+        if dataloader_idx == 0:
+            self.top1_meter.update(acc1[0], labels.shape[0])
+        else:
+            self.poi_top1_meter.update(acc1[0], labels.shape[0])
 
-        return top1.avg
+        return None
+    
+    def test_epoch_end(self, outputs):
+        if self.global_rank == 0:
+            print('{yellow}Clean Acc@1{reset}: {:.5f}'.format(self.top1_meter.avg, **ansi))
+            print('{red}Poisoned Acc@1{reset}: {:.5f}'.format(self.poi_top1_meter.avg, **ansi))
 
-    def eval(self, epoch=None):
-        ori_acc = self._eval_on_clean(epoch=epoch)
-        print('{yellow}Original Acc@1{reset}: {:.5f}'
-                  .format(ori_acc, **ansi))
 
-        if self.cfg.attack != 'Clean':
-            poi_acc = self._eval_on_poison(epoch=epoch)
-            print('{red}Poisoning Acc@1{reset}: {:.5f}'
-                  .format(poi_acc, **ansi))
+def run(cfg):
+
+    classifier = Classifier(cfg)
+
+    if cfg.train:
+        checkpoint_callback = callbacks.ModelCheckpoint(
+            monitor='top1',
+            dirpath=classifier.ckpt_path,
+            save_last=True,
+            mode='max')
+
+        tb_logger = TensorBoardLogger(classifier.log_path) if cfg.enable_tb else None
+
+        trainer = pl.Trainer(
+            devices=len(cfg.device),
+            accelerator='gpu',
+            max_epochs=cfg.epochs,
+            log_every_n_steps=30,
+            check_val_every_n_epoch=cfg.every_n_epoch,
+            callbacks=[checkpoint_callback],
+            logger=tb_logger,
+            strategy="ddp_find_unused_parameters_false"
+        )
+
+        trainer.fit(model=classifier, train_dataloaders=classifier.train_loader, 
+                    val_dataloaders=[classifier.ori_test_loader, classifier.poi_test_loader])
+
+    else:
+        trainer.test(model=classifier, ckpt_path=cfg.ckpt, 
+                    dataloaders=[classifier.ori_test_loader, classifier.poi_test_loader])

@@ -39,6 +39,6 @@ def add_argument(parser: argparse.ArgumentParser):
     group.add_argument('--sample_batch', type=int, default=0,
                         help='sample the clean and poisoned images at `sample_batch`-th batch'
                         '(default: 0, -1 for no sample)')
-    group.add_argument('--eval_every_epochs', type=int, default=10,
+    group.add_argument('--every_n_epoch', type=int, default=10,
                         help='interval for validation of the model'
                         '(default: 10)')

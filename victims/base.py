@@ -3,37 +3,33 @@ import time
 import yaml
 import torch
 import torch.optim as optim
-from abc import abstractclassmethod
 from networks.backbone import ResNet
 from utils.utils import check_path
 from data.utils import get_num_classes
+import pytorch_lightning as pl
 
 
-class BaseProcess(object):
+class BaseProcess(pl.LightningModule):
     r"""Base class for backdoor attack
 
     Args:
         opt: arguments
         enable_tb: enable tensorboard, default is `True`
     """
-    def __init__(self, cfg, enable_tb=True) -> None:
+    def __init__(self, cfg) -> None:        
+        super().__init__()
 
         cfg.classes = get_num_classes(cfg.dataset)
+        self.cfg = cfg
 
         cur_time = time.strftime('%y-%m-%d-%H-%M-%S', time.localtime())
 
         self.model_name = '{}_{}_{}_{}'.format(cfg.dataset, cfg.model, cur_time, cfg.trial)
         self.ckpt_path = os.path.join(cfg.ckpt_path, cfg.attack, self.model_name)
-        check_path(self.ckpt_path)
-
         self.log_path = os.path.join(cfg.log_path, cfg.attack, self.model_name)
-        check_path(self.log_path)
 
-        if enable_tb:
-            self.tb_path = os.path.join(self.log_path, 'tensorboard')
-            check_path(self.tb_path)
-        
-        self.cfg = cfg
+        check_path(self.ckpt_path)
+        check_path(self.log_path)
 
         self._save_config_parameters()
 
@@ -49,7 +45,8 @@ class BaseProcess(object):
             model.load_state_dict(state_dict['model'])
         return model
 
-    def _load_optimizer(self, parameters):
+    def configure_optimizers(self):
+        parameters = self.model.parameters()
 
         if self.cfg.optim == 'SGD':
             optimizer = optim.SGD(parameters,
@@ -107,21 +104,27 @@ class BaseProcess(object):
             else:
                 lr_scheduler = main_lr_scheduler
 
-        return optimizer, lr_scheduler
-
-    def _save_model(self, obj, filename):
-        ckpt = os.path.join(self.ckpt_path, filename)
-        print("Saving checkpint to {}".format(ckpt))
-        torch.save(obj, ckpt)
-
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": lr_scheduler,
+                "interval": "epoch"
+                }
+            }
+    
     def _save_config_parameters(self):
         with open(os.path.join(self.log_path, 'parameters.yaml'), 'w') as f:
             yaml.dump(self.cfg, f, indent=2)
 
-    @abstractclassmethod
-    def train(self):
-        pass
-    
-    @abstractclassmethod
-    def eval(self):
-        pass
+
+    @staticmethod
+    def collect_outputs(outputs, key_list):
+        """
+        Collect outoputs of pytorchlighting
+        """
+        output_list = [[] for _ in range(len(key_list))]
+
+        for out in outputs:
+            for i, key in enumerate(key_list):
+                output_list[i].append(out[key])
+        return output_list

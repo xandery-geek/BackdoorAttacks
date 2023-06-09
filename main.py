@@ -6,13 +6,13 @@ import numpy as np
 import data
 import attacks
 import victims
-from victims.classifier import Classifier
+import victims.classifier as classifier
 from utils.utils import str2bool
 
 
 def add_argument(parser: argparse.ArgumentParser):
     group = parser.add_argument_group('basic', 'basic arguments')
-    group.add_argument('--device', type=int, default=0, help='gpu id')
+    group.add_argument('--device', type=str, default="0", help='gpu id')
     group.add_argument('--attack', type=str, default='BadNets', 
                         choices=['Clean', 'BadNets', 'SIG', 'FIBA', 'FTrojan'], 
                         help='Backdoor attack methods')
@@ -24,6 +24,7 @@ def add_argument(parser: argparse.ArgumentParser):
 
     group.add_argument('--seed', type=int, default=1024, help='random seed')
     group.add_argument('--trial', type=str, default='0', help='id for recording multiple runs')
+    group.add_argument('--enable_tb', type=str2bool, default=True, help='enable tensorboard')
 
 
 def set_seed(seed):
@@ -34,6 +35,10 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
 
 
+
+def set_env(device):
+    os.environ['CUDA_VISIBLE_DEVICES'] = device
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     add_argument(parser)
@@ -42,13 +47,11 @@ if __name__ == "__main__":
     victims.add_argument(parser)
     
     cfg = parser.parse_args()
+    device = cfg.device
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = str(cfg.device)
+    cfg.device = [int(i.strip()) for i in device.split(',')]
+    
+    set_env(device)
     set_seed(cfg.seed)
 
-    Processer = Classifier(cfg)
-    
-    if cfg.train:
-        Processer.train()
-    else:
-        Processer.eval()
+    classifier.run(cfg)
