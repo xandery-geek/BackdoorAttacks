@@ -10,7 +10,7 @@ dataset_dict = {
 }
 
 
-def load_data(data_path, dataset=None, train=True, target_transform=None):
+def load_data(data_path, dataset=None, train=True, transform=None, target_transform=None):
 
     if dataset is None:
         dataset_path = data_path
@@ -20,7 +20,7 @@ def load_data(data_path, dataset=None, train=True, target_transform=None):
         except KeyError:
             raise NotImplementedError('dataset {} is not supported!'.format(dataset))
 
-    dataset = datasets.ImageFolder(root=dataset_path, target_transform=target_transform)
+    dataset = datasets.ImageFolder(root=dataset_path, transform=transform, target_transform=target_transform)
     return dataset
 
 
@@ -40,25 +40,27 @@ def get_padding_size(dataset):
 
 
 def get_transform(dataset, train=True):
-        mean = (0.49139968, 0.48215827, 0.44653124)
-        std = (0.24703233, 0.24348505, 0.26158768)
+    mean = (0.49139968, 0.48215827, 0.44653124)
+    std = (0.24703233, 0.24348505, 0.26158768)
 
-        image_size = get_image_size(dataset)
-        padding_size = get_padding_size(dataset)
-        if train:
-            transform = [
-                transforms.RandomCrop(image_size, padding=padding_size),
-                transforms.RandomHorizontalFlip(),
-            ]
-        else:
-            transform = [
-                transforms.CenterCrop(image_size),
-            ]
+    image_size = get_image_size(dataset)
+    padding_size = get_padding_size(dataset)
+    if train:
+        transform = [
+            transforms.Resize(image_size),
+            transforms.RandomCrop(image_size, padding=padding_size),
+            transforms.RandomHorizontalFlip(),
+        ]
+    else:
+        transform = [
+            transforms.Resize(image_size),
+            transforms.CenterCrop(image_size),
+        ]
 
-        transform.extend([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std),
-        ])
+    transform.extend([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=mean, std=std),
+    ])
 
-        transform = transforms.Compose(transform)
-        return transform
+    transform = transforms.Compose(transform)
+    return transform

@@ -145,5 +145,5 @@ class Classifier(BaseProcess):
 
         if self.cfg.attack != 'Clean':
             poi_acc = self._eval_on_poison(epoch=epoch)
-            print('{red}Original Acc@1{reset}: {:.5f}'
+            print('{red}Poisoning Acc@1{reset}: {:.5f}'
                   .format(poi_acc, **ansi))
