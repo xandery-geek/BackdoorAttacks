@@ -1,12 +1,10 @@
 import os
-import time
 import yaml
 import torch
 import torch.optim as optim
 from networks.backbone import ResNet
-from utils.utils import check_path
-from data.utils import get_num_classes
 import pytorch_lightning as pl
+from data.utils import get_num_classes
 
 
 class BaseProcess(pl.LightningModule):
@@ -19,30 +17,19 @@ class BaseProcess(pl.LightningModule):
     def __init__(self, cfg) -> None:        
         super().__init__()
 
-        cfg.classes = get_num_classes(cfg.dataset)
         self.cfg = cfg
-
-        cur_time = time.strftime('%y-%m-%d-%H-%M-%S', time.localtime())
-
-        self.model_name = '{}_{}_{}_{}'.format(cfg.dataset, cfg.model, cur_time, cfg.trial)
-        self.ckpt_path = os.path.join(cfg.ckpt_path, cfg.attack, self.model_name)
-        self.log_path = os.path.join(cfg.log_path, cfg.attack, self.model_name)
-
-        check_path(self.ckpt_path)
-        check_path(self.log_path)
-
-        self._save_config_parameters()
+        
+        if cfg.train:
+            self.save_hyperparameters(self.cfg)
 
     def _load_model(self):
+        classes = get_num_classes(self.cfg.dataset)
+
         if 'ResNet' in self.cfg.model:
-            model = ResNet(self.cfg.model, self.cfg.classes)
+            model = ResNet(self.cfg.model, classes)
         else:
             raise NotImplementedError('model {} is not supported!'.format(self.cfg.model))
         
-        if self.cfg.ckpt != '' and os.path.exists(self.cfg.ckpt):
-            print('==> Loading state dict from {}'.format(self.cfg.ckpt))
-            state_dict = torch.load(self.cfg.cpkt)
-            model.load_state_dict(state_dict['model'])
         return model
 
     def configure_optimizers(self):

@@ -13,7 +13,7 @@ def add_argument(parser: argparse.ArgumentParser):
     group.add_argument('--momentum', type=float, default=0.9, help='momentum for SGD')
     group.add_argument('--weight_decay', type=float, default=5e-4, 
                        help='weight decay')
-    group.add_argument('--betas', type=tuple, default=(0.5, 0.999), 
+    group.add_argument('--betas', type=list, default=[0.5, 0.999], 
                        help='betas for Adam optimizer')
     group.add_argument('--lr_scheduler', type=str2bool, default=True, 
                        help='enable lr scheduler')

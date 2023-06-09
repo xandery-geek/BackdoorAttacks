@@ -1,3 +1,5 @@
+import os
+import time
 import torch
 import pytorch_lightning as pl
 from victims.base import BaseProcess
@@ -30,15 +32,11 @@ class Classifier(BaseProcess):
         self.top1_meter = AverageMeter()
         self.poi_top1_meter = AverageMeter()
 
-        self._print_info()
-
     def _print_info(self):
         print('-' * 50)
         print("Datast: {}".format(self.cfg.dataset))
         print("Model: {}".format(self.cfg.model))
         print("Attack: {}".format(self.cfg.attack))
-        print("Checkpoint path: {}".format(self.ckpt_path))
-        print("Log path: {}".format(self.log_path))
         print('-' * 50)
 
     def _load_data(self):
@@ -146,33 +144,49 @@ class Classifier(BaseProcess):
             print('{red}Poisoned Acc@1{reset}: {:.5f}'.format(self.poi_top1_meter.avg, **ansi))
 
 
+def update_cfg(cfg, new_cfg):
+    for key, val in new_cfg.items():
+        cfg.__setattr__(key, val)
+    return cfg
+
+
 def run(cfg):
 
+    cur_time = time.strftime('%y-%m-%d-%H-%M-%S', time.localtime())
+
+    model_name = '{}_{}_{}_{}'.format(cfg.dataset, cfg.model, cur_time, cfg.trial)
+    ckpt_path = os.path.join(cfg.ckpt_path, cfg.attack, model_name)
+    log_path = os.path.join(cfg.log_path, cfg.attack, model_name)
+
+    cfg = update_cfg(cfg, {"ckpt_path": ckpt_path, "log_path": log_path})
     classifier = Classifier(cfg)
 
-    checkpoint_callback = callbacks.ModelCheckpoint(
-        monitor='top1',
-        dirpath=classifier.ckpt_path,
-        save_last=True,
-        mode='max')
-
-    tb_logger = TensorBoardLogger(classifier.log_path) if cfg.enable_tb else None
-
-    trainer = pl.Trainer(
-        devices=len(cfg.device),
-        accelerator='gpu',
-        max_epochs=cfg.epochs,
-        log_every_n_steps=30,
-        check_val_every_n_epoch=cfg.every_n_epoch,
-        callbacks=[checkpoint_callback],
-        logger=tb_logger,
-        strategy="ddp_find_unused_parameters_false"
-    )
-    
     if cfg.train:
+        checkpoint_callback = callbacks.ModelCheckpoint(
+            monitor='top1',
+            dirpath=cfg.ckpt_path,
+            save_last=True,
+            mode='max')
+
+        tb_logger = TensorBoardLogger(cfg.log_path) if cfg.enable_tb else None
+
+        trainer = pl.Trainer(
+            devices=len(cfg.device),
+            accelerator='gpu',
+            max_epochs=cfg.epochs,
+            log_every_n_steps=30,
+            check_val_every_n_epoch=cfg.every_n_epoch,
+            callbacks=[checkpoint_callback],
+            logger=tb_logger,
+            strategy="ddp_find_unused_parameters_false"
+        )
         trainer.fit(model=classifier, train_dataloaders=classifier.train_loader, 
                     val_dataloaders=[classifier.ori_test_loader, classifier.poi_test_loader])
 
     else:
+        trainer = pl.Trainer(
+            devices=1,
+            accelerator='gpu',
+        )
         trainer.test(model=classifier, ckpt_path=cfg.ckpt, 
                     dataloaders=[classifier.ori_test_loader, classifier.poi_test_loader])

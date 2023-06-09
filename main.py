@@ -35,9 +35,9 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
 
 
-
 def set_env(device):
     os.environ['CUDA_VISIBLE_DEVICES'] = device
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
