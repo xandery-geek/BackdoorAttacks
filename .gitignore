@@ -1,5 +1,6 @@
 checkpoint/
 script/
 log/
+defenses/
 .vscode/
 __pycache__
