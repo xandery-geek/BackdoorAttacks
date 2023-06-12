@@ -9,7 +9,7 @@ def add_argument(parser: argparse.ArgumentParser):
                         choices=['ResNet18', 'ResNet34', 'ResNet50', 'ResNet101'])
     group.add_argument('--epochs', type=int, default=100, help='train epoches')
     group.add_argument('--optim', type=str, default='SGD', choices=['SGD', 'Adam'], help='optimizer name')
-    group.add_argument('--lr', type=float, default=0.025, help='learning rate')
+    group.add_argument('--lr', type=float, default=0.05, help='learning rate')
     group.add_argument('--momentum', type=float, default=0.9, help='momentum for SGD')
     group.add_argument('--weight_decay', type=float, default=5e-4, 
                        help='weight decay')

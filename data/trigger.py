@@ -1,3 +1,4 @@
+import random
 import numpy as np
 from abc import abstractclassmethod
 from PIL import Image
@@ -31,23 +32,24 @@ class PixelTrigger(BaseTrigger):
 
 
 class PatchTrigger(BaseTrigger):
-    def __init__(self, mask, patch, mode='CHW') -> None:
+    def __init__(self, patch_img, image_size, patch_size, pos_strategy='fixed', mode='HWC') -> None:
         super().__init__('Patch Trigger', mode=mode)
-        assert mask.shape == patch.shape
-        self.mask = mask
-        self.patch = patch
+        assert pos_strategy in ['fixed', 'random']
+
+        self.patch_img = patch_img
+        self.image_size = image_size
+        self.patch_size = patch_size
+        self.pos_strategy = pos_strategy
 
     def __call__(self, img):
 
         img_arr = np.array(img)
-        if self.mode == 'HWC':
-            channel = img_arr.shape[-1]
-            if len(self.patch.shape) < 3:
-                self.mask = np.expand_dims(self.mask, 2)
-                self.patch = np.expand_dims(self.patch, 2)
-            if self.patch.shape[2] == 1:
-                self.mask = np.repeat(self.mask, channel, axis=2)
-                self.patch = np.repeat(self.patch, channel, axis=2)
 
-        img_arr = img_arr * (1 - self.mask) + self.patch * self.mask
+        if self.pos_strategy == 'random':
+            pos = [random.randint(0, self.image_size - self.patch_size),
+                   random.randint(0, self.image_size - self.patch_size)]
+        else:
+            pos = [self.image_size - self.patch_size, self.image_size - self.patch_size]
+
+        img_arr[pos[0]: pos[0] + self.patch_size, pos[1]: pos[1] + self.patch_size, :] = self.patch_img
         return Image.fromarray(img_arr)

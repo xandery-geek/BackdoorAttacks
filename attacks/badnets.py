@@ -1,4 +1,3 @@
-import random
 import numpy as np
 from PIL import Image
 from attacks.base import BaseAttack
@@ -16,36 +15,24 @@ class BadNetsDataset(PoisonedDataset):
         self.pre_transform = pre_transform
         self.poi_param = poi_param
 
-        # set trigger
-        mask, patch = self.load_patch()
-        self.trigger = PatchTrigger(mask, patch, mode='HWC')
-
-    def load_patch(self):
         image_size = self.poi_param['image_size']
         patch_size = self.poi_param['patch_size']
 
-        if self.poi_param['patch_pos'] == 'random':
-            x = random.randint(0, image_size-patch_size)
-            y = random.randint(0, image_size-patch_size)
-            pos = [x, y]
-        else:
-            # fixed to bottom-right corner
-            pos = [image_size - patch_size, image_size - patch_size]
+        # set trigger
+        patch_img = self.load_patch()
+        self.trigger = PatchTrigger(patch_img, image_size, patch_size, pos_strategy='random')
 
-        mask = np.zeros((image_size, image_size, 3), dtype=np.uint8)
-        patch = np.zeros((image_size, image_size, 3), dtype=np.uint8)
+    def load_patch(self):
+        patch_size = self.poi_param['patch_size']
 
-        mask[pos[0]: pos[0] + patch_size, pos[1]: pos[1] + patch_size, :] = 1
-        
         if self.poi_param['patch_path'] != '':
             patch_img = Image.open(self.poi_param['patch_path']).convert('RGB')
             patch_img = patch_img.resize((patch_size, patch_size))
             patch_img = np.array(patch_img)
-            patch[pos[0]: pos[0] + patch_size, pos[1]: pos[1] + patch_size, :] = patch_img
         else:
-            patch[pos[0]: pos[0] + patch_size, pos[1]: pos[1] + patch_size, :] = 255
+            patch_img = np.ones((patch_size, patch_size, 3), dtype=np.uint8) * 255
 
-        return mask, patch
+        return patch_img
 
     def __getitem__(self, index):
         path, target = self.imgs[index]
