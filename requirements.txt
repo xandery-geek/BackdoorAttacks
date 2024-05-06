@@ -1,0 +1,6 @@
+Pillow==9.5.0
+pytorch-lightning==1.8.3.post1
+tensorboard==2.11.0
+torch==1.10.2
+torchvision==0.11.3
+tqdm==4.64.1
