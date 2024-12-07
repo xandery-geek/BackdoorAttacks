@@ -1,4 +1,4 @@
-from abc import abstractclassmethod 
+from abc import abstractmethod
 
 
 class BaseAttack(object):
@@ -6,6 +6,6 @@ class BaseAttack(object):
         self.name = name
         self.opt = opt
 
-    @abstractclassmethod
+    @abstractmethod
     def get_poisoned_data(self, *args):
         pass

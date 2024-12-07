@@ -57,7 +57,6 @@ Poisoned Acc@1: 95.78000
 **SIG (2019, ICIP)**
 - `paper`: [A New Backdoor Attack in CNNS by Training Set Corruption Without Label Poisoning](https://arxiv.org/abs/1902.11237)
 
-
 **FIBA (2022, CVPR)**
 - `paper`: [FIBA: Frequency-Injection Based Backdoor Attack in Medical Image Analysis](https://arxiv.org/abs/2112.01148)
 - `code`: [FIBA](https://github.com/HazardFY/FIBA)
@@ -67,9 +66,15 @@ Poisoned Acc@1: 95.78000
 - `code`: [FTrojan](https://github.com/SoftWiser-group/FTrojan)
 
 **ISSBA (ICCV 2021)**
+> In this repository, we did not implement ISSBA's trigger generator due to its complexity. Please refer to its official implementation.
+
 - `paper`: [Invisible Backdoor Attack with Sample-Specific Triggers
 ](http://openaccess.thecvf.com/content/ICCV2021/html/Li_Invisible_Backdoor_Attack_With_Sample-Specific_Triggers_ICCV_2021_paper.html)
 - `code`: [ISSBA](https://github.com/yuezunli/ISSBA)
+
+**LCBA (2019)**
+- `paper`: [Label-Consistent Backdoor Attacks](https://arxiv.org/abs/1912.02771)
+- `code`: [LCBA](https://github.com/MadryLab/label-consistent-backdoor-code)
 
 ## LICENSE
 This project is under the MIT license. See [LICENSE](LICENSE) for details.

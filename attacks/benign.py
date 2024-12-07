@@ -3,7 +3,7 @@ from data.dataset import NormalDataset
 from data.utils import load_data, get_transform
 
 
-class Clean(BaseAttack):
+class Benign(BaseAttack):
     """
     Without Backdoor Attack
     """

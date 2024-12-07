@@ -1,7 +1,7 @@
 import argparse
 
 from . import badnets
-from . import clean
+from . import benign
 from . import sig
 from . import fiba
 from . import ftrojan

@@ -14,8 +14,8 @@ def add_argument(parser: argparse.ArgumentParser):
     group = parser.add_argument_group('basic', 'basic arguments')
     group.add_argument('--device', type=str, default="0", help='gpu id')
     group.add_argument('--attack', type=str, default='BadNets', 
-                        choices=['Clean', 'BadNets', 'SIG', 'FIBA', 'FTrojan'], 
-                        help='Backdoor attack methods')
+                        choices=['Benign', 'BadNets', 'SIG', 'FIBA', 'FTrojan'], 
+                        help='Backdoor attack methods. Benign means no attack.')
     
     group.add_argument('--ckpt_path', type=str, default='checkpoint', help='checkpoint path')
     group.add_argument('--log_path', type=str, default='log', help='log path')
